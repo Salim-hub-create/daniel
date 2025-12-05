@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מיין את הצירוף: סמיכות או שם ותוארו</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Heebo', sans-serif;
+            background-color: #f7f9fc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .game-container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            text-align: center;
+        }
+        .phrase-box {
+            background-color: #e0f2f1;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 12px;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #004d40;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        .button {
+            width: 48%;
+            padding: 15px 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .button-smichut {
+            background-color: #4db6ac;
+            color: white;
+            border: 2px solid #00796b;
+        }
+        .button-smichut:hover {
+            background-color: #26a69a;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+        .button-toaro {
+            background-color: #ffb74d;
+            color: #3e2723;
+            border: 2px solid #ff9800;
+        }
+        .button-toaro:hover {
+            background-color: #ffa726;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+        #feedback {
+            min-height: 60px;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: right;
+            line-height: 1.4;
+            transition: opacity 0.3s;
+        }
+        .correct {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+        .wrong {
+            background-color: #ffcdd2;
+            color: #c62828;
+        }
+        .score-box {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #37474f;
+        }
+        .tip-box {
+             margin-top: 15px;
+             padding: 15px;
+             background-color: #fffde7;
+             border: 1px solid #ffeb3b;
+             border-radius: 8px;
+             text-align: right;
+             font-size: 0.95rem;
+             color: #616161;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">מיין את הצירוף! 🕵️‍♂️</h1>
+    <p class="text-lg mb-8 text-gray-600">האם הצירוף הוא סמיכות או שם ותוארו?</p>
+
+    <div id="phrase" class="phrase-box">...טוען צירוף...</div>
+
+    <div class="flex justify-between gap-4">
+        <button class="button button-smichut" onclick="checkAnswer('סמיכות')">צירוף סמיכות</button>
+        <button class="button button-toaro" onclick="checkAnswer('שם ותוארו')">שם ותוארו</button>
+    </div>
+
+    <div id="feedback" style="opacity: 0;"></div>
+    <div id="tip-area"></div>
+    <div class="score-box">ניקוד: <span id="score">0</span> / <span id="total">0</span></div>
+</div>
+
+<script>
+    // הגדרת הצירופים והתשובות הנכונות
+    const PHRASES = [
+        { text: "מנורה גדולה", type: "שם ותוארו", hint: "נסה ליידע: 'המנורה הגדולה'. אם ה' הידיעה מופיעה בשתי המילים, זה שם ותוארו." },
+        { text: "כדורי שוקולד", type: "סמיכות", hint: "נסה ליידע: 'כדורי השוקולד'. אם ה' הידיעה מופיעה רק במילה השנייה (הסומך), זה סמיכות." },
+        { text: "מפת שולחן", type: "סמיכות", hint: "נסה ריבוי: 'מפות שולחן'. אם רק המילה הראשונה (הנסמך) מקבלת ריבוי, זה סמיכות." },
+        { text: "מכונית ישנה", type: "שם ותוארו", hint: "נסה ריבוי: 'מכוניות ישנות'. אם שתי המילים מקבלות ריבוי, זה שם ותוארו. בנוסף, הן מתאימות במין ובמספר." },
+        { text: "כוס מים", type: "סמיכות", hint: "נסה ליידע: 'כוס המים'. רק המילה השנייה מקבלת ה'. זה סמיכות." },
+        { text: "בית חדש", type: "שם ותוארו", hint: "נסה ליידע: 'הבית החדש'. ה' הידיעה מופיעה בשתי המילים. זה שם ותוארו." },
+        { text: "לוח שנה", type: "סמיכות", hint: "נסה ריבוי: 'לוחות שנה'. רק המילה הראשונה השתנתה. זה סמיכות." },
+        { text: "ילד חכם", type: "שם ותוארו", hint: "נסה ליידע: 'הילד החכם'. ה' הידיעה מופיעה בשתי המילים. זה שם ותוארו." },
+        { text: "שרשרת זהב", type: "סמיכות", hint: "נסה ליידע: 'שרשרת הזהב'. ה' הידיעה מופיעה רק במילה השנייה. זה סמיכות." },
+        { text: "עוגה טעימה", type: "שם ותוארו", hint: "נסה ליידע: 'העוגה הטעימה'. שתי המילים מקבלות ה'. זה שם ותוארו. בנוסף, הן מתאימות במין ובמספר." }
+    ];
+
+    let currentPhrase = null;
+    let score = 0;
+    let totalAttempts = 0;
+
+    const phraseElement = document.getElementById('phrase');
+    const feedbackElement = document.getElementById('feedback');
+    const scoreElement = document.getElementById('score');
+    const totalElement = document.getElementById('total');
+    const tipArea = document.getElementById('tip-area');
+    
+    // רשימה של אינדקסים כדי לבחור צירופים אקראיים בלי חזרות מיידיות
+    let availableIndices = [...Array(PHRASES.length).keys()];
+    let lastIndex = -1;
+
+    /**
+     * טוען צירוף חדש לתצוגה.
+     */
+    function loadNewPhrase() {
+        if (availableIndices.length === 0) {
+            // אם נגמרו הצירופים, מתחילים מהתחלה
+            availableIndices = [...Array(PHRASES.length).keys()];
+        }
+        
+        let randomIndex;
+        do {
+            randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+        } while (randomIndex === lastIndex && PHRASES.length > 1); // מונע חזרה על אותו צירוף ברצף
+        
+        // מוציא את הצירוף שנבחר מרשימת הזמינים
+        const indexInAvailable = availableIndices.indexOf(randomIndex);
+        availableIndices.splice(indexInAvailable, 1);
+        lastIndex = randomIndex;
+
+        currentPhrase = PHRASES[randomIndex];
+        phraseElement.textContent = currentPhrase.text;
+        feedbackElement.style.opacity = 0;
+        tipArea.innerHTML = '';
+    }
+
+    /**
+     * בודק את התשובה שנבחרה על ידי המשתמש.
+     * @param {string} selectedType - 'סמיכות' או 'שם ותוארו'
+     */
+    function checkAnswer(selectedType) {
+        if (!currentPhrase) return; // מונע קליקים מיותרים
+
+        totalAttempts++;
+        totalElement.textContent = totalAttempts;
+
+        if (selectedType === currentPhrase.type) {
+            score++;
+            scoreElement.textContent = score;
+
+            feedbackElement.className = 'correct';
+            feedbackElement.textContent = `✅ נכון מאוד! הצירוף "${currentPhrase.text}" הוא ${currentPhrase.type}.`;
+            tipArea.innerHTML = `<div class="tip-box bg-green-50 border-green-300 text-green-700">כל הכבוד! ${currentPhrase.hint}</div>`;
+
+            setTimeout(loadNewPhrase, 2000); // טען צירוף חדש לאחר שתי שניות
+        } else {
+            feedbackElement.className = 'wrong';
+            feedbackElement.textContent = `❌ לא מדויק... הצירוף "${currentPhrase.text}" הוא למעשה ${currentPhrase.type}.`;
+            
+            // מציג טיפ מותאם לטעות
+            tipArea.innerHTML = `<div class="tip-box bg-yellow-50 border-yellow-300 text-yellow-700">💡 טיפ לדניאל: ${currentPhrase.hint}</div>`;
+        }
+        feedbackElement.style.opacity = 1;
+    }
+
+    // הפעלת המשחק
+    window.onload = loadNewPhrase;
+</script>
+
+</body>
+</html>
